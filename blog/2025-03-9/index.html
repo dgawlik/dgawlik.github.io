@@ -1,0 +1,213 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-bvzihdzo> <head><!-- Global Metadata --><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><link rel="sitemap" href="/sitemap-index.xml"><link rel="alternate" type="application/rss+xml" title="DG | Fullstack Developer" href="https://example.com/rss.xml"><meta name="generator" content="Astro v6.3.7"><style>@font-face{font-family:Atkinson-c7f4c4e8b285552f;src:url("/_astro/fonts/cda5e24fa5fb21a7.woff") format("woff");font-display:swap;font-weight:400;font-style:normal;}@font-face{font-family:Atkinson-c7f4c4e8b285552f;src:url("/_astro/fonts/78dda5d5d0e3f385.woff") format("woff");font-display:swap;font-weight:700;font-style:normal;}@font-face{font-family:"Atkinson-c7f4c4e8b285552f fallback: Arial";src:local("Arial");font-display:swap;font-weight:400;font-style:normal;size-adjust:99.3717%;ascent-override:80.1033%;descent-override:25.2587%;line-gap-override:0%;}@font-face{font-family:"Atkinson-c7f4c4e8b285552f fallback: Arial";src:local("Arial");font-display:swap;font-weight:700;font-style:normal;size-adjust:99.3717%;ascent-override:80.1033%;descent-override:25.2587%;line-gap-override:0%;}:root{--font-atkinson:Atkinson-c7f4c4e8b285552f,"Atkinson-c7f4c4e8b285552f fallback: Arial",sans-serif;}</style><link rel="preload" href="/_astro/fonts/cda5e24fa5fb21a7.woff" as="font" type="font/woff" crossorigin><link rel="preload" href="/_astro/fonts/78dda5d5d0e3f385.woff" as="font" type="font/woff" crossorigin><!-- Canonical URL --><link rel="canonical" href="https://example.com/blog/2025-03-9/"><!-- Primary Meta Tags --><title>Semantic search for dynamically built queries in Java and CodeQL</title><meta name="title" content="Semantic search for dynamically built queries in Java and CodeQL"><meta name="description" content="Solving hard task at work"><!-- Open Graph / Facebook --><meta property="og:type" content="website"><meta property="og:url" content="https://example.com/blog/2025-03-9/"><meta property="og:title" content="Semantic search for dynamically built queries in Java and CodeQL"><meta property="og:description" content="Solving hard task at work"><meta property="og:image" content="https://example.com/_astro/blog-placeholder-1.Bx0Zcyzv.jpg"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://example.com/blog/2025-03-9/"><meta property="twitter:title" content="Semantic search for dynamically built queries in Java and CodeQL"><meta property="twitter:description" content="Solving hard task at work"><meta property="twitter:image" content="https://example.com/_astro/blog-placeholder-1.Bx0Zcyzv.jpg"><link rel="stylesheet" href="/_astro/BaseHead.BTR_0LEV.css">
+<style>main[data-astro-cid-bvzihdzo]{width:calc(100% - 2em);max-width:100%;margin:0}.hero-image[data-astro-cid-bvzihdzo]{width:100%}.hero-image[data-astro-cid-bvzihdzo] img[data-astro-cid-bvzihdzo]{display:block;margin:0 auto;border-radius:12px;box-shadow:var(--box-shadow)}.prose[data-astro-cid-bvzihdzo]{width:900px;max-width:calc(100% - 1.5em);margin:auto;padding:1em}.title[data-astro-cid-bvzihdzo]{margin-bottom:1em;padding:1em 0;text-align:center;line-height:1}.title[data-astro-cid-bvzihdzo] h1[data-astro-cid-bvzihdzo]{margin:0 0 .5em}.date[data-astro-cid-bvzihdzo]{margin-bottom:.5em;color:rgb(var(--gray))}.last-updated-on[data-astro-cid-bvzihdzo]{font-style:italic}
+</style></head> <body data-astro-cid-bvzihdzo> <main data-astro-cid-bvzihdzo> <article data-astro-cid-bvzihdzo> <div class="hero-image" data-astro-cid-bvzihdzo>  </div> <div class="prose" data-astro-cid-bvzihdzo> <div class="title" data-astro-cid-bvzihdzo> <div class="date" data-astro-cid-bvzihdzo> <time datetime="2025-03-08T23:00:00.000Z"> Mar 9, 2025 </time>  </div> <h1 data-astro-cid-bvzihdzo>Semantic search for dynamically built queries in Java and CodeQL</h1> <hr data-astro-cid-bvzihdzo> </div>  <p>There was a challenge for me recently to search for SQL queries in large codebase. There is a problem
+with using basic grep or even IntelliJ search here because of the performance issues.</p>
+<ul>
+<li>queries are long and dynamically appended</li>
+<li>codebase is large</li>
+<li>string searching is not performant enough.</li>
+</ul>
+<p>An answer how to solve this task is buried in history of beginnings of static analysis tools. The first tools
+used basic regexes, but that turned out inefficient pretty quickly. Then incrementally more focus has been
+put to parse source files to Abstract Syntax Trees which is allows more freedom to write queries. Then
+finally Data Flow approach was added alongside Taint Analysis to make current landscape of security today.</p>
+<p>Semantic searching has 2 advantages:</p>
+<ul>
+<li>searching bare tokens is orders of magnitude faster than strings, in turn searching Abstract Syntax Trees
+is order of magnitude faster than tokens</li>
+<li>semantic search offers more precision in designing the queries which only reinforces the first point.</li>
+</ul>
+<p><strong>CodeQL</strong> is one such tool that knows the syntax of major languages (Java) and caters for performant search of
+large codebases. I decided to have fun with it over the weekend and push it to it’s limits as searching for
+dynamic queries is hard enough. I will show how to set up the project and write some queries for toy source file.</p>
+<p>Let’s get started.</p>
+<!-- truncate -->
+<h2 id="codeql-setup">CodeQL setup</h2>
+<p>First step is downloading <a href="https://docs.github.com/en/code-security/codeql-cli/getting-started-with-the-codeql-cli/setting-up-the-codeql-cli">CLI</a> and setting it up in a PATH.</p>
+<p>Then you have to build <strong>database</strong> for the project you will be analyzing. Unfortunately on each code change you have to rebuid it.</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>codeql database create --source-root=. --language=java-kotlin --command='./mvnw clean compile' -- tester</span></span></code></pre>
+<p><code>--source-root</code> - it is used for reporting in queries which give you source locations</p>
+<p><code>--language</code> - if you want to limit project just to one language, this is an option</p>
+<p><code>--command</code> - codeQL tracks work of build tool to extract AST and DataFlow information</p>
+<p>Then in next step download VSCode extension.</p>
+<p>Select <strong>QL</strong> on the sidebar.</p>
+<p>Lanugage > set Java.</p>
+<p>Databases > From a folder > point to database folder you have built.</p>
+<p>Ctrl+Shift+p > CodeQL: create query</p>
+<p>And you are good to go.</p>
+<h2 id="the-challenge">The challenge</h2>
+<p>We will be operating on Spring Boot project, but of interest is one file only really.</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="java"><code><span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">package</span><span style="color:#FA8532;--shiki-dark:#FA8532"> com</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">example</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">demo</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">database</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">import</span><span style="color:#FA8532;--shiki-dark:#FA8532"> java</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">util</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">List</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">import</span><span style="color:#FA8532;--shiki-dark:#FA8532"> org</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">springframework</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">beans</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">factory</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">annotation</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">Autowired</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">import</span><span style="color:#FA8532;--shiki-dark:#FA8532"> org</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">springframework</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">jdbc</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">core</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">JdbcTemplate</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">import</span><span style="color:#FA8532;--shiki-dark:#FA8532"> org</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">springframework</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">stereotype</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">Service</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">import</span><span style="color:#FA8532;--shiki-dark:#FA8532"> com</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">example</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">demo</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">valueobject</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#FA8532;--shiki-dark:#FA8532">Purchasing1</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">@</span><span style="color:#E59645;--shiki-dark:#E59645">Service</span></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">public</span><span style="color:#FA8532;--shiki-dark:#FA8532"> class</span><span style="color:#22A4E6;--shiki-dark:#22A4E6"> WWRepository1</span><span style="color:#5C6166;--shiki-dark:#5C6166"> {</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">   </span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">   @</span><span style="color:#E59645;--shiki-dark:#E59645">Autowired</span></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">   private</span><span style="color:#22A4E6;--shiki-dark:#22A4E6"> JdbcTemplate</span><span style="color:#5C6166;--shiki-dark:#5C6166"> jdbcTemplate</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">   public</span><span style="color:#22A4E6;--shiki-dark:#22A4E6"> List</span><span style="color:#5C6166;--shiki-dark:#5C6166">&#x3C;</span><span style="color:#22A4E6;--shiki-dark:#22A4E6">Purchasing1</span><span style="color:#5C6166;--shiki-dark:#5C6166">> </span><span style="color:#EBA400;--shiki-dark:#EBA400">getAllPurchasing</span><span style="color:#5C6166;--shiki-dark:#5C6166">() {</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        </span></span>
+<span class="line"><span style="color:#22A4E6;--shiki-dark:#22A4E6">        StringBuilder</span><span style="color:#5C6166;--shiki-dark:#5C6166"> aside </span><span style="color:#F2A191;--shiki-dark:#F2A191">=</span><span style="color:#FA8532;--shiki-dark:#FA8532"> new</span><span style="color:#EBA400;--shiki-dark:#EBA400"> StringBuilder</span><span style="color:#5C6166;--shiki-dark:#5C6166">()</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        aside</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"Hello "</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        aside</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"World"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        aside</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"!"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        System</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#5C6166;--shiki-dark:#5C6166">out</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">println</span><span style="color:#5C6166;--shiki-dark:#5C6166">(aside</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">toString</span><span style="color:#5C6166;--shiki-dark:#5C6166">())</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#22A4E6;--shiki-dark:#22A4E6">        StringBuilder</span><span style="color:#5C6166;--shiki-dark:#5C6166"> sql </span><span style="color:#F2A191;--shiki-dark:#F2A191">=</span><span style="color:#FA8532;--shiki-dark:#FA8532"> new</span><span style="color:#EBA400;--shiki-dark:#EBA400"> StringBuilder</span><span style="color:#5C6166;--shiki-dark:#5C6166">()</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        sql</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"SELECT Description, SupplierName, BankAccountName, ValidFrom, ValidTo "</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        sql</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"FROM Purchasing.PurchaseOrders o "</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#EBA400;--shiki-dark:#EBA400">        addJoin1</span><span style="color:#5C6166;--shiki-dark:#5C6166">(sql)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#EBA400;--shiki-dark:#EBA400">        addJoin2</span><span style="color:#5C6166;--shiki-dark:#5C6166">(sql)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">        return</span><span style="color:#5C6166;--shiki-dark:#5C6166"> jdbcTemplate</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">query</span><span style="color:#5C6166;--shiki-dark:#5C6166">(sql</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">toString</span><span style="color:#5C6166;--shiki-dark:#5C6166">()</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">,</span><span style="color:#5C6166;--shiki-dark:#5C6166"> (rs</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">,</span><span style="color:#5C6166;--shiki-dark:#5C6166"> rowNum) </span><span style="color:#FA8532;--shiki-dark:#FA8532">-></span><span style="color:#5C6166;--shiki-dark:#5C6166"> </span></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">             new</span><span style="color:#EBA400;--shiki-dark:#EBA400"> Purchasing1</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">                rs</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">getString</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"Description"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">,</span><span style="color:#5C6166;--shiki-dark:#5C6166"> </span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">                rs</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">getString</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"SupplierName"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">,</span><span style="color:#5C6166;--shiki-dark:#5C6166"> </span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">                rs</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">getString</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"BankAccountName"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">,</span><span style="color:#5C6166;--shiki-dark:#5C6166"> </span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">                rs</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">getTimestamp</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"ValidFrom"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">toLocalDateTime</span><span style="color:#5C6166;--shiki-dark:#5C6166">()</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">,</span><span style="color:#5C6166;--shiki-dark:#5C6166"> </span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">                rs</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">getTimestamp</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"ValidTo"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">toLocalDateTime</span><span style="color:#5C6166;--shiki-dark:#5C6166">()</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">            )</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">        )</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">   }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">   private</span><span style="color:#55B4D4;--shiki-dark:#55B4D4"> void</span><span style="color:#EBA400;--shiki-dark:#EBA400"> addJoin1</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#22A4E6;--shiki-dark:#22A4E6">StringBuilder</span><span style="color:#A37ACC;--shiki-dark:#A37ACC"> sb</span><span style="color:#5C6166;--shiki-dark:#5C6166">) {</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">       sb</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"inner join Purchasing.PurchaseOrderLines l on o.PurchaseOrderID = l.PurchaseOrderID "</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">   }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FA8532;--shiki-dark:#FA8532">   private</span><span style="color:#55B4D4;--shiki-dark:#55B4D4"> void</span><span style="color:#EBA400;--shiki-dark:#EBA400"> addJoin2</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#22A4E6;--shiki-dark:#22A4E6">StringBuilder</span><span style="color:#A37ACC;--shiki-dark:#A37ACC"> sb</span><span style="color:#5C6166;--shiki-dark:#5C6166">) {</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">      sb</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">.</span><span style="color:#EBA400;--shiki-dark:#EBA400">append</span><span style="color:#5C6166;--shiki-dark:#5C6166">(</span><span style="color:#86B300;--shiki-dark:#86B300">"inner join Purchasing.Suppliers s on s.SupplierID = o.SupplierID"</span><span style="color:#5C6166;--shiki-dark:#5C6166">)</span><span style="color:#5C6166B3;--shiki-dark:#5C6166B3">;</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">   }</span></span>
+<span class="line"><span style="color:#5C6166;--shiki-dark:#5C6166">}</span></span></code></pre>
+<p>Let’s make some assumptions:</p>
+<ul>
+<li>codebase is tens of thousands files, but query building is local to single file</li>
+<li>queries are built with <strong>StringBuilder</strong> but there can be some noise like unrelated <strong>appends</strong></li>
+<li>query is “finalized* with passing it to <strong>jdbcTemplate</strong></li>
+<li>query building can be nested in helper methods which can further nest the logic</li>
+<li>query searching has to be case insensitive</li>
+</ul>
+<h2 id="approximate-solution">Approximate solution</h2>
+<p>My logic here is the following. Having a file of the given query is good enough, even having false positives.
+So let’s assume that the file is valid if it has all the query chunks. For example WWRepository1.java is valid
+because it has:</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>SELECT Description, SupplierName, BankAccountName, ValidFrom, ValidTo</span></span></code></pre>
+<p>and</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>FROM Purchasing.PurchaseOrders o </span></span></code></pre>
+<p>and</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>inner join Purchasing.PurchaseOrderLines l on o.PurchaseOrderID = l.PurchaseOrderID</span></span></code></pre>
+<p>and</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>inner join Purchasing.Suppliers s on s.SupplierID = o.SupplierID</span></span></code></pre>
+<p>A limitation of this approach is that if we have 2 queries in one file, they could intermix and
+give a false positive, but let’s not worry about that for now.</p>
+<p>Let’s write first CodeQL query.</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>bindingset[q]</span></span>
+<span class="line"><span>predicate appendWithQuery(File f, string q) {</span></span>
+<span class="line"><span>    exists(MethodCall e, Expr part |</span></span>
+<span class="line"><span>        e.getFile() = f</span></span>
+<span class="line"><span>        and e.getMethod().hasName("append") </span></span>
+<span class="line"><span>        and e.getQualifier().getType().hasName("StringBuilder")</span></span>
+<span class="line"><span>        and part = e.getArgument(0)</span></span>
+<span class="line"><span>        and (part.toString().matches("%"+q+"%") </span></span>
+<span class="line"><span>    ))</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>from </span></span>
+<span class="line"><span>    File f</span></span>
+<span class="line"><span>where </span></span>
+<span class="line"><span>    appendWithQuery(f, "SELECT Description, SupplierName, BankAccountName, ValidFrom, ValidTo")</span></span>
+<span class="line"><span>    and appendWithQuery(f, "FROM Purchasing.PurchaseOrders")</span></span>
+<span class="line"><span>    and appendWithQuery(f, "inner join Purchasing.PurchaseOrderLines")</span></span>
+<span class="line"><span>    and appendWithQuery(f, "inner join Purchasing.Suppliers")</span></span>
+<span class="line"><span>select f</span></span></code></pre>
+<p>And we get one file which is correct. CodeQL is purely declarative that allows to treat AST element like a table in
+itself.</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>from </span></span>
+<span class="line"><span>  File f</span></span></code></pre>
+<p>Find any file in the database.</p>
+<p><code>bindingset[q]</code> - by default evaluator prohibits unbounded expressions, this silences the error</p>
+<p><code>exists</code> - nested subquery matching if any of the results are present</p>
+<p><code>e.getMethod().hasName("append")</code> - we are targeting appends</p>
+<p><code>e.getQualifier().getType().hasName("StringBuilder")</code> - the target type is StringBuilder</p>
+<p><code>part = e.getArgument(0)</code> - limit part expression to be first argument of our append</p>
+<p><code>part.toString().matches("%FROM Purchasing.PurchaseOrders%")</code> - first argument serialized to string has this label</p>
+<p>Now that we found something let’s refine the query to be more accurate.</p>
+<h2 id="exact-solution">Exact solution</h2>
+<p>So far we used pure AST based queries, but a nice feature of <strong>CodeQL</strong> is that allows to analyze data flow
+inside the codebase. It’s has it’s limitations though - you can’t just compute the expression for a method for
+example as that would mean running the program. You can however order instructions in codebase in happens-before
+relation which is good enough to refine our query.</p>
+<p>CodeQL has 2 variants: Local DataFlow and Global DataFlow. It turns out that local variant is presupposed to be
+used on simple expressions and does not track variables across method calls. So we will use global option (I have
+no idea how long it runs for medium sized projects)</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>import java</span></span>
+<span class="line"><span>import semmle.code.java.dataflow.DataFlow</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  module FindQueryConfig implements DataFlow::ConfigSig {</span></span>
+<span class="line"><span>    predicate isSource(DataFlow::Node source) {</span></span>
+<span class="line"><span>      exists (MethodCall jdbcQuery, MethodCall toString |</span></span>
+<span class="line"><span>            jdbcQuery.getMethod().hasName("query") and</span></span>
+<span class="line"><span>            jdbcQuery.getArgument(0) = toString and </span></span>
+<span class="line"><span>            toString.getMethod().hasName("toString") and</span></span>
+<span class="line"><span>            DataFlow::localFlow(DataFlow::exprNode(source.asExpr()), </span></span>
+<span class="line"><span>                 DataFlow::exprNode(toString.getQualifier()))</span></span>
+<span class="line"><span>        )</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>  </span></span>
+<span class="line"><span>    predicate isSink(DataFlow::Node sink) {</span></span>
+<span class="line"><span>       sink.asExpr().(MethodCall).getMethod().hasName("append")</span></span>
+<span class="line"><span>       and exists (Expr argument |</span></span>
+<span class="line"><span>            argument = sink.asExpr().(MethodCall).getArgument(0)</span></span>
+<span class="line"><span>            and (argument.toString().matches("%SELECT Description, SupplierName, BankAccountName, ValidFrom, ValidTo%")</span></span>
+<span class="line"><span>            or argument.toString().matches("%FROM Purchasing.PurchaseOrders%")</span></span>
+<span class="line"><span>            or argument.toString().matches("%inner join Purchasing.PurchaseOrderLines%")</span></span>
+<span class="line"><span>            or argument.toString().matches("%inner join Purchasing.Suppliers%"))</span></span>
+<span class="line"><span>        )</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>  }</span></span>
+<span class="line"><span>  </span></span>
+<span class="line"><span>  module FindQuery = DataFlow::Global&#x3C;FindQueryConfig>;</span></span>
+<span class="line"><span>  </span></span>
+<span class="line"><span>  from DataFlow::Node src, DataFlow::Node sink</span></span>
+<span class="line"><span>  where FindQuery::flow(src, sink)</span></span>
+<span class="line"><span>  select src, "This environment variable constructs a URL $@.", sink, "here"</span></span></code></pre>
+<p>In essence dataflow is represented as ordered instructions coming from source to sink. There is only
+one sink and from it all preceding instructions are considered. Then these 2 variables can be further
+matched in query to limit the search.</p>
+<p>This query is considering as sink any expression that ultimately lands in <code>jdbc.query</code> as an argument so</p>
+<pre class="astro-code astro-code-themes ayu-light ayu-light" style="background-color:#f8f9fa;--shiki-dark-bg:#f8f9fa;color:#5c6166;--shiki-dark:#5c6166; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>StringBuilder aside = new StringBuilder();</span></span>
+<span class="line"><span>aside.append("Hello ");</span></span>
+<span class="line"><span>aside.append("World");</span></span>
+<span class="line"><span>aside.append("!");</span></span></code></pre>
+<p>this won’t be matched as false positive.</p>
+<p>The sink is any append expression that takes familiar labels from the previous part.</p>
+<p><code>predicate</code> - this is the function that takes any arguments and returns boolean, it is
+designed to offload heavy logic from your main query to selfcontained part</p>
+<p><code>exists</code> - it is a subquery that matches if any of the records exists, before the bar <code>|</code>
+you write “free variables” and after some condition like in predicate</p>
+<p>Then final lines is the flow execution. Little nuisance is that instead of single file it will
+give you all code paths to the sinks. But clicking any of the links takes you to the file anyway.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>CodeQL is rich and mature tool. I only uncovered the tip of an iceberg for a specific use case.
+If you are interested you can:</p>
+<ul>
+<li>read the documentation or github blog posts</li>
+<li>read index of all combinators</li>
+<li>read security rules written on top of it</li>
+</ul>
+<p><strong>Further reading</strong></p>
+<ul>
+<li><a href="https://github.blog/developer-skills/github/codeql-zero-to-hero-part-1-the-fundamentals-of-static-analysis-for-vulnerability-research/">CodeQL zero to hero: part 1</a></li>
+<li><a href="https://github.blog/developer-skills/github/codeql-zero-to-hero-part-2-getting-started-with-codeql/">CodeQL zero to hero: part 2</a></li>
+<li><a href="https://github.blog/security/vulnerability-research/codeql-zero-to-hero-part-3-security-research-with-codeql/">CodeQL zero to hero: part 3</a></li>
+</ul>  </div> </article> </main> </body></html>

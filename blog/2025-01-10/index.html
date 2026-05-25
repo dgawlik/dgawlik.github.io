@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-bvzihdzo> <head><!-- Global Metadata --><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><link rel="sitemap" href="/sitemap-index.xml"><link rel="alternate" type="application/rss+xml" title="DG | Fullstack Developer" href="https://example.com/rss.xml"><meta name="generator" content="Astro v6.3.7"><style>@font-face{font-family:Atkinson-c7f4c4e8b285552f;src:url("/_astro/fonts/cda5e24fa5fb21a7.woff") format("woff");font-display:swap;font-weight:400;font-style:normal;}@font-face{font-family:Atkinson-c7f4c4e8b285552f;src:url("/_astro/fonts/78dda5d5d0e3f385.woff") format("woff");font-display:swap;font-weight:700;font-style:normal;}@font-face{font-family:"Atkinson-c7f4c4e8b285552f fallback: Arial";src:local("Arial");font-display:swap;font-weight:400;font-style:normal;size-adjust:99.3717%;ascent-override:80.1033%;descent-override:25.2587%;line-gap-override:0%;}@font-face{font-family:"Atkinson-c7f4c4e8b285552f fallback: Arial";src:local("Arial");font-display:swap;font-weight:700;font-style:normal;size-adjust:99.3717%;ascent-override:80.1033%;descent-override:25.2587%;line-gap-override:0%;}:root{--font-atkinson:Atkinson-c7f4c4e8b285552f,"Atkinson-c7f4c4e8b285552f fallback: Arial",sans-serif;}</style><link rel="preload" href="/_astro/fonts/cda5e24fa5fb21a7.woff" as="font" type="font/woff" crossorigin><link rel="preload" href="/_astro/fonts/78dda5d5d0e3f385.woff" as="font" type="font/woff" crossorigin><!-- Canonical URL --><link rel="canonical" href="https://example.com/blog/2025-01-10/"><!-- Primary Meta Tags --><title>My exploration of WASM/WASI</title><meta name="title" content="My exploration of WASM/WASI"><meta name="description" content="What is the state of the art"><!-- Open Graph / Facebook --><meta property="og:type" content="website"><meta property="og:url" content="https://example.com/blog/2025-01-10/"><meta property="og:title" content="My exploration of WASM/WASI"><meta property="og:description" content="What is the state of the art"><meta property="og:image" content="https://example.com/_astro/blog-placeholder-1.Bx0Zcyzv.jpg"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://example.com/blog/2025-01-10/"><meta property="twitter:title" content="My exploration of WASM/WASI"><meta property="twitter:description" content="What is the state of the art"><meta property="twitter:image" content="https://example.com/_astro/blog-placeholder-1.Bx0Zcyzv.jpg"><link rel="stylesheet" href="/_astro/BaseHead.BTR_0LEV.css">
+<style>main[data-astro-cid-bvzihdzo]{width:calc(100% - 2em);max-width:100%;margin:0}.hero-image[data-astro-cid-bvzihdzo]{width:100%}.hero-image[data-astro-cid-bvzihdzo] img[data-astro-cid-bvzihdzo]{display:block;margin:0 auto;border-radius:12px;box-shadow:var(--box-shadow)}.prose[data-astro-cid-bvzihdzo]{width:900px;max-width:calc(100% - 1.5em);margin:auto;padding:1em}.title[data-astro-cid-bvzihdzo]{margin-bottom:1em;padding:1em 0;text-align:center;line-height:1}.title[data-astro-cid-bvzihdzo] h1[data-astro-cid-bvzihdzo]{margin:0 0 .5em}.date[data-astro-cid-bvzihdzo]{margin-bottom:.5em;color:rgb(var(--gray))}.last-updated-on[data-astro-cid-bvzihdzo]{font-style:italic}
+</style></head> <body data-astro-cid-bvzihdzo> <main data-astro-cid-bvzihdzo> <article data-astro-cid-bvzihdzo> <div class="hero-image" data-astro-cid-bvzihdzo>  </div> <div class="prose" data-astro-cid-bvzihdzo> <div class="title" data-astro-cid-bvzihdzo> <div class="date" data-astro-cid-bvzihdzo> <time datetime="2025-01-09T23:00:00.000Z"> Jan 10, 2025 </time>  </div> <h1 data-astro-cid-bvzihdzo>My exploration of WASM/WASI</h1> <hr data-astro-cid-bvzihdzo> </div>  <p>Assembler was developed in 1947, wow! It makes 78 years of computing development in which we saw higher level programming languages, virtual machine programming languages (write once run everywhere), virtual machines, cloud and so on. A lot of knowledge got accumulated over the time which you can see in size of artifacts deployed to cloud.</p>
+<p>Over the years we have seen several attempts reach for the roots. Similarly <strong>WebAssembly</strong> is instruction format for virtual machine designed to be portable compilation target for any language willing. It is fast as nearly native speed, secure and sandboxed and language agnostic. Originally wrote for the browsers it is beginning to get traction as microservice runtime, which btw is topic of this post.</p>
+<!-- truncate -->
+<h2 id="comparison-to-jvm">Comparison to JVM</h2>
+<p>It is obvious that WASM and JVM share similarities as intermediate-represented runtimes. If you have interpreted language then out of necessity you have to have some mechanism to speed things up. For Java
+there is tiered JIT compiler and Wasm also has JIT however there is also possiblity of Ahead of Time Compilation.</p>
+<p>Wasm was designed for <em>security, portability, and fast startup</em> and differs in several things from Java.
+First of all WASM modules are compact binaries and smaller size means faster loading. Second all the dependencies are pre-bundled and not needed to be loaded dynamically which takes time. And the binary code is already sandboxed which means it does not need to be validated.</p>
+<p>But what is most interesting is that WASM bytecode is closer to native binaries than JVM bytecode which means it can be JITed with less effort. Here is why:</p>
+<ul>
+<li>linear memory model similar to C-style pointers</li>
+<li>no GC</li>
+<li>basic numeric types</li>
+<li>assembly like control flow (loops, branches, direct-calls) versus method invocations</li>
+</ul>
+<p>It looks like history took whole circle.</p>
+<h2 id="why-bother">Why bother</h2>
+<p>Where Wasm will shine in near future is serverless computing, which is now more or less poinless. Imagine deploying 100MB artifact which will spin up in 5 seconds for only ONE function. But with Wasm and it’s promises to start withing 20ms the task takes whole new dimension.</p>
+<p>And of course cloud is money. And where is money (cost savings) there imo will always be political will to move things forward. I’m pretty sure WebAssembly has bright future, at least for the cloud and edge.</p>
+<p>A month ago I watched <a href="https://www.youtube.com/watch?v=fQdkNGZqYZA">this wasmCloud presentation</a> which was an interesting case for the Edge. Imagine that you run a factory with devices with computing constraints. If the gear is spinning 5000 RPMs you have to take corrective action right now, instead of waiting for server to respond. Wasm can be deployed on such machines (Edge) and take necessary actions of control loop while delegating higher level business functions to cloud.</p>
+<h3 id="sandboxing-and-formal-verification">Sandboxing and Formal Verification</h3>
+<p>If computer programs were computationally proven to be correct (formal verification) then there would be no bugs at all. Sandboxing is one step close towards this goal. If you enforce clear boundaries of the system,
+which files are used, what is sent on network and so on the security is much easier to reason about without “gaps”. And once you have perfectly isolated component without gaps you can use formal tools to actually prove the logic is correct. I found <a href="https://oa.upm.es/75802/1/TFM_DAVID_MUNUERA_MAZARRO.pdf">something here</a> will take a look in near future.</p>
+<h3 id="webassembly-component-model">WebAssembly Component Model</h3>
+<p>So far the application have been run in one-off basis, but standards are emerging which will handle component interactions (microservices). Here is a <a href="https://component-model.bytecodealliance.org/">summary</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Word</th><th>Definition</th></tr></thead><tbody><tr><td>component</td><td>a specially wrapped wasm binary that can interact with other components on clear interfaces</td></tr><tr><td>interface</td><td>a contract between components that is language agnostic</td></tr><tr><td>WIT</td><td>interface defnition langauge that you port with componentized applications</td></tr><tr><td>world</td><td>contract between component and runtime</td></tr></tbody></table>
+<p>So you basically write the functionality in Rust and <strong>export</strong> functions in Wit. Other component <strong>imports</strong> (also with WIT) these functions and the serialization/deserialization is handled by runtime. wasmCloud claims to also remotely call the imports which is handled with NATS. Why WIT you may ask? Because wasm primtives are just numbers and strings. For high level functionality you need <em>records</em>, <em>tuples</em>, <em>variants</em>, <em>lists</em> and so on.</p>
+<h3 id="for-now-disapointing">For now disapointing</h3>
+<p>It looks all good but is still in it’s nascency. This means you probably won’t see library for your use (if you don’t write yourself). However there are several runtimes that are under development:</p>
+<ul>
+<li>wasmCloud</li>
+<li>fermyon/spin</li>
+<li>wasmEdge</li>
+<li>WAGI</li>
+<li>and more</li>
+</ul>
+<p>Right now it is hard to host microservices application with WASI other than communicating via http.</p>
+<p>I got carried away and wrote some <a href="https://github.com/vulture-dominiczek/fermyon-spin-eval">number factorization microservice app</a>. Check it out!</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>It’s worth following the developments, that’s for sure. I’m pretty certain that the bright future is ahead for WASM.</p>  </div> </article> </main> </body></html>
