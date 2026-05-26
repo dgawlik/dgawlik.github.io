@@ -482,7 +482,7 @@
     
     header.addEventListener('click', () => {
       panel.classList.toggle('collapsed');
-      toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
+      toggle.textContent = panel.classList.contains('collapsed') ? '+' : '^';
     });
 
     // Mouse Listeners
