@@ -215,8 +215,8 @@
         console.log(content.value);
 
         const data = {
-          from: email,
-          content: content
+          from: email.value,
+          content: content.value
         };
 
         fetch("https://europe-west4-ai-translator-3de8b.cloudfunctions.net/secure-cors-function", {
