@@ -207,7 +207,38 @@
     if (contactForm && formSuccess) {
       contactForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
+        const email = contactForm.querySelector('#email');
+        const content = contactForm.querySelector('#message');
+
+        console.log(email.value);
+        console.log(content.value);
+
+        const data = {
+          from: email,
+          content: content
+        };
+
+        fetch("https://europe-west4-ai-translator-3de8b.cloudfunctions.net/secure-cors-function", {
+          method: "POST", 
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data) // Converts JS object to JSON string
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json(); // Parse the incoming JSON response from the server
+        })
+        .then(result => {
+          console.log("Success:", result);
+        })
+        .catch(error => {
+          console.error("Error sending data:", error);
+        });
+
         // Fetch button and show loading state
         const submitBtn = contactForm.querySelector('.submit-btn');
         const originalBtnContent = submitBtn.innerHTML;
